@@ -11,15 +11,18 @@ class Car:
     def move(self, point, canvas):
         canvas.move(self.obj, point[0], point[1])
 
+    def moveTo(self, point, canvas):
+        canvas.moveto(self.obj, point[0], point[1])
+
     def follow(self, road, canvas):
+        currentDelay = 0
         for line in road.lines:
-            lengthOfLine = int(math.sqrt((line.point1[0] - line.point2[0])**2 + (line.point1[1] - line.point2[1])**2))
-            for i in range(0, lengthOfLine):
-                positionInLine = (i/lengthOfLine)*(line.point2[1] - line.point1[1])
-                print(positionInLine)
-                slope = (line.point1[1] - line.point2[1])/(line.point1[0] - line.point2[0])
-                position = (positionInLine - line.point1[1], slope*(positionInLine - line.point1[0]))
-                canvas.after(100*i, self.move, position, canvas)
+            lengthOfLine = line.length
+            movement = ((line.xLength/lengthOfLine)+line.point1[0], (line.yLength/lengthOfLine)+line.point1[1])
+            print(movement)
+            for i in range(0, int(lengthOfLine)):
+                canvas.after(currentDelay, self.moveTo, [e*i for e in movement], canvas)
+                currentDelay += 10
 
 
 class Line:
@@ -28,9 +31,25 @@ class Line:
         self.point2 = point2
         self.obj = canvas.create_line(point1[0], point1[1], point2[0], point2[1], width=2, fill='red')
 
+    @property
+    def xLength(self):
+        return self.point2[0] - self.point1[0]
+
+    @property
+    def yLength(self):
+        return self.point2[1] - self.point1[1]
+
+    @property
+    def length(self):
+        return math.sqrt(self.xLength ** 2 + self.yLength ** 2)
+
+    @property
+    def slope(self):
+        return self.yLength/self.xLength
+
 
 class Road:
-    def __init__(self, lines, canvas):
+    def __init__(self, lines):
         self.lines = lines
 
 
@@ -41,7 +60,7 @@ C = tk.Canvas(top, bg="white", height=500, width=500)
 # points = (0, 0), (0, 100), (100, 0)
 # image = C.create_polygon(list(itertools.chain(*points)))
 car = Car((100, 100), 20, C)
-road = Road([Line((0, 0), (300, 300), C)], C)
+road = Road([Line((0, 0), (300, 300), C), Line((300, 300), (100, 200), C), Line((100, 200), (400, 300), C)])
 car.follow(road, C)
 
 
