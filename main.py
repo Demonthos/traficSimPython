@@ -127,23 +127,45 @@ class Intersection:
         self.size = size
         self.roads = set()
         self.obj = None
-        self.delay = 100
+        self.objPos = None
+        self.clearIntersectionTime = 300
+        self.waiting = []
 
     def getRandom(self):
         return random.choice(list(self.roads))
 
+    def updateColor(self, canvas):
+        if self.obj:
+            canvas.itemconfig(self.obj, fill=_from_rgb((min(255, 100 * len(self.waiting)), 0, 255)))
+
     def addConnection(self, road, canvas, start):
         position = road.lines[0].point1 if start else road.lines[-1].point2
         position = [p + (self.size / 2) for p in position]
-        # if not self.obj:
-        self.obj = canvas.create_oval(position[0], position[1], position[0] - self.size, position[1] - self.size,
+        if self.objPos != position:
+            if self.obj:
+                canvas.itemconfig(self.obj, fill='red')
+            self.obj = canvas.create_oval(position[0], position[1], position[0] - self.size, position[1] - self.size,
                                       width=2,
-                                      fill='blue')
+                                      fill='red' if self.obj else 'blue')
+            self.objPos = position
         self.roads.add(road)
         # print(position, self.roads, start, road.connected)
 
+    def resolveWaitingCallbacks(self, canvas):
+        self.updateColor(canvas)
+        if len(self.waiting) > 0:
+            self.resolveCallback(self.waiting[-1], canvas)
+
+    def resolveCallback(self, callback, canvas):
+        canvas.after(self.clearIntersectionTime, callback)
+        # you must remove before resolving waiting callbacks to avoid errors
+        canvas.after(self.clearIntersectionTime, lambda c: (self.waiting.remove(callback), self.resolveWaitingCallbacks(c)), canvas)
+
     def wait(self, callback, canvas):
-        canvas.after(self.delay, callback)
+        self.waiting.append(callback)
+        if len(self.waiting) <= 1:
+            self.resolveWaitingCallbacks(canvas)
+
 
 top = tk.Tk()
 
@@ -152,7 +174,7 @@ C = tk.Canvas(top, bg="white", height=size[0], width=size[1])
 
 def genRoad(genLength, currentState=None, pointsOccupied=[]):
     points = [currentState] if currentState else []
-    while len(points) < genLength:
+    while len(points) <= genLength:
         newPoint = False
         repeatCount = 0
         while (not newPoint) or newPoint in points or newPoint in pointsOccupied or not (
@@ -171,9 +193,9 @@ def genRoad(genLength, currentState=None, pointsOccupied=[]):
     return points
 
 
-roads = []
 numSegmentsPerRoad = 3
-numLights = 50
+numLights = 60
+roads = []
 allPoints = [None]
 newSegments = None
 retryCount = 0
@@ -184,8 +206,16 @@ def goBack():
     retryCount += 1
     if len(roads) > 0:
         # recalculate all points
-        roads.pop().delete(C)
-        allPoints = list(set(flatten(flatten([[(line.point1, line.point2) for line in road.lines] for road in roads]))))
+        roads[-1].delete(C)
+        roads.pop(-1)
+        allPoints = list(flatten(flatten([[(line.point1, line.point2) for line in road.lines] for road in roads])))
+        pPoint = None
+        newAllPoints = []
+        for point in allPoints:
+            if (not pPoint) or point != pPoint:
+                newAllPoints.append(point)
+            pPoint = point
+        allPoints = newAllPoints
         return True
     else:
         return False
@@ -196,7 +226,6 @@ while len(roads) < numLights:
     if retryCount > 500:
         while len(roads) > 0:
             roads.pop().delete(C)
-        numSegmentsPerRoad = 5
         allPoints = [None]
         newSegments = None
         retryCount = 0
@@ -207,8 +236,11 @@ while len(roads) < numLights:
     newSegments = genRoad(numSegmentsPerRoad, allPoints[-1], allPoints)
     # no valid moves go back
     if newSegments is None:
+        print('before going back:', len(roads), len(allPoints))
         if goBack():
-            print('going back one road', len(roads), len(allPoints))
+            print('after going back one road', len(roads), len(allPoints))
+        else:
+            print('returned false')
 
 pRoad = None
 for road in roads:
