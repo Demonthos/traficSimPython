@@ -10,60 +10,41 @@ from utils import *
 
 top = tk.Tk()
 
-C = tk.Canvas(top, bg="white", height=size[0], width=size[1])
+C = tk.Canvas(top, bg="white", height=size[0]+20, width=size[1]+20)
 
 
 def genRoad(genLength, currentState=None, pointsOccupied=[], end=None):
     if currentState is None:
-        currentState = tuple((e // 200)*100 for e in size)
-    # print(currentState, pointsOccupied)
+        currentState = tuple(((e // 2) // stepSize)*50 for e in size)
+    if end == currentState:
+        return None
     if end:
-        result = pathFind(currentState, stepSize, obstacles=pointsOccupied, end=end)
+        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), end=end)
     else:
-        result = pathFind(currentState, stepSize, obstacles=pointsOccupied, length=genLength)
+        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), length=genLength)
     if result is None:
-        print('failed')
+        # print('failed')
         return None
     points = [p.position for p in result]
     return points
 
 
-# def genRoad(genLength, currentState=None, pointsOccupied=[], end=None):
-#     points = [currentState] if currentState else []
-#     while len(points) < genLength:
-#         newPoint = False
-#         repeatCount = 0
-#         while (not newPoint) or newPoint in points or newPoint in pointsOccupied or not (
-#                 size[0] > newPoint[0] > 0 and size[1] > newPoint[1] > 0):
-#             # if their is no valid move undo last move
-#             if repeatCount > 100 + ((len(points) == 0) * 1000):
-#                 if len(points) > 0:
-#                     points.pop()
-#                 else:
-#                     # no possible valid moves
-#                     return None
-#             newPoint = tuple(p + (30 * (random.randint(0, 2) - 1)) for p in points[-1]) if len(points) > 0 else (
-#                 size[0] / 2, size[1] / 2)
-#             repeatCount += 1
-#         points.append(newPoint)
-#     return points
-
-
 roads = []
 numSegmentsPerRoad = 2
-numLights = 30
-allPoints = [None]
+numRoads = 30
+numCars = 50
+numInterConnections = 10
+allPoints = []
 newSegments = None
 retryCount = 0
 
 
 def goBack():
     global allPoints, roads, retryCount
-    retryCount += 1
     if len(roads) > 0:
+        retryCount += 1
         # recalculate all points
-        roads[-1].delete(C)
-        roads.pop(-1)
+        roads.pop().delete(C)
         allPoints = list(flatten(flatten([[(line.point1, line.point2) for line in road.lines] for road in roads])))
         pPoint = None
         newAllPoints = []
@@ -77,7 +58,7 @@ def goBack():
         return False
 
 
-while len(roads) < numLights:
+while len(roads) < numRoads:
     # retried a lot
     if retryCount > 500:
         while len(roads) > 0:
@@ -86,6 +67,7 @@ while len(roads) < numLights:
         allPoints = []
         newSegments = None
         retryCount = 0
+        print('resetting')
     if newSegments is not None:
         newRoad = Road(newSegments, C)
         roads.append(newRoad)
@@ -96,6 +78,7 @@ while len(roads) < numLights:
         if goBack():
             print('going back one road', len(roads), len(allPoints))
 
+
 pRoad = None
 for road in roads:
     if pRoad:
@@ -103,7 +86,42 @@ for road in roads:
         road.addConnection(intersection, C, True)
         pRoad.addConnection(intersection, C, False)
     pRoad = road
-cars = [Car((100, 100), 10, C) for i in range(1, 30)]
+
+while numInterConnections > 0:
+    road1 = random.choice(roads)
+    road2 = None
+    tryCount = 0
+    while (road2 is None or road1 == road2 or chebyshevDistance(road1.lines[0].point1, road2.lines[0].point1) > 4*stepSize) and tryCount < 100:
+        road2 = random.choice(roads)
+        tryCount += 1
+    newSegments = genRoad(numSegmentsPerRoad, road1.lines[0].point1, allPoints, end=road2.lines[0].point1)
+    if newSegments is not None:
+        if DEBUG:
+            newRoad = Road(newSegments, C, color=(255, 0, 0))
+        else:
+            newRoad = Road(newSegments, C)
+        roads.append(newRoad)
+        allPoints += newSegments
+        boolVal = True
+        new = boolVal not in road1.connected.keys()
+        intersection = road1.connected[boolVal] if not new else Intersection(20)
+        newRoad.addConnection(intersection, C, boolVal)
+        if new:
+            road1.addConnection(intersection, C, boolVal)
+        boolVal = True
+        new = boolVal not in road2.connected.keys()
+        intersection = road2.connected[boolVal] if not new else Intersection(20)
+        newRoad.addConnection(intersection, C, not boolVal)
+        if new:
+            road2.addConnection(intersection, C, boolVal)
+        # print('added inter connection')
+        numInterConnections -= 1
+    else:
+        # print('failed to added inter connection')
+        # print(road1.lines[0].point1, road2.lines[0].point1)
+        pass
+
+cars = [Car((100, 100), 10, C) for i in range(numCars)]
 for i, car in enumerate(cars):
     if i % 2 == 0:
         car.follow(roads[random.randint(0, len(roads) - 1)], C, True)

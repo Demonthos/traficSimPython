@@ -3,6 +3,7 @@ import random
 
 size = [500] * 2
 stepSize = 50
+DEBUG = False
 
 
 def _from_rgb(rgb):
@@ -12,12 +13,13 @@ def _from_rgb(rgb):
     return f'#{r:02x}{g:02x}{b:02x}'
 
 
+def chebyshevDistance(position1, position2):
+    return max(abs(position1[0] - position2[0]), abs(position1[1] - position2[1]))
+
+
 def pathFind(start, stepDist, obstacles=[], maxSize=size, end=None, length=None):
     if length and end:
         raise TypeError("can't accept both end and length")
-
-    def chebyshevDistance(position1, position2):
-        return max(abs(position1[0] - position2[0]), abs(position1[1] - position2[1]))
 
     def getNeighbors(position):
         permutations = (1, 0), (0, 1), (1, 1), (-1, 0), (0, -1), (-1, -1), (-1, 1), (1, -1)
@@ -59,7 +61,8 @@ def pathFind(start, stepDist, obstacles=[], maxSize=size, end=None, length=None)
 
     while len(openSet) > 0:
         bestChoice = openSet.pop(0)
-        if (length is not None and len(bestChoice.getPathTo()) > length) or (end is not None and bestChoice.position == end.position):
+        if (length is not None and len(bestChoice.getPathTo()) > length) or (
+                end is not None and bestChoice.position == end.position):
             # print('success')
             return bestChoice.getPathTo()
         for pos in getNeighbors(bestChoice.position):
@@ -84,4 +87,4 @@ def pathFind(start, stepDist, obstacles=[], maxSize=size, end=None, length=None)
 
 
 if __name__ == '__main__':
-    print([e.position for e in pathFind((200, 200), stepSize, obstacles=[], end=(200, 150))])
+    print([e.position for e in pathFind((250, 300), 50, [(250, 250), (300, 250), (350, 250), (350, 300), (300, 300), (250, 350), (250, 350), (200, 350), (150, 350), (100, 350), (100, 350), (100, 400), (100, 450), (150, 500), (150, 500), (200, 450), (250, 500), (300, 450), (300, 450), (250, 400), (300, 350), (200, 300), (150, 250), (100, 300), (100, 300), (50, 250), (100, 200), (50, 150), (50, 150), (100, 100), (100, 50), (150, 0), (150, 0), (200, 50), (250, 50), (300, 50)], end=(400, 250))])

@@ -2,8 +2,8 @@ from line import Line
 
 
 class Road:
-    def __init__(self, points, canvas):
-        self.lines = [Line(points[i], points[i + 1], canvas) for i in range(0, len(points) - 1)]
+    def __init__(self, points, canvas, color=tuple([0]*3)):
+        self.lines = [Line(points[i], points[i + 1], canvas, color=color) for i in range(0, len(points) - 1)]
         self.connected_ = {}
 
     @property

@@ -3,10 +3,11 @@ from utils import _from_rgb
 
 
 class Line:
-    def __init__(self, point1, point2, canvas):
+    def __init__(self, point1, point2, canvas, color=tuple([0]*3)):
         self.point1: tuple = point1
         self.point2: tuple = point2
         self.obj = canvas.create_line(point1[0], point1[1], point2[0], point2[1], width=10)
+        self.color = color
         self.carsOn: set = set()
         self.updateColor(canvas)
 
@@ -27,7 +28,7 @@ class Line:
         return self.yLength / self.xLength
 
     def updateColor(self, canvas):
-        canvas.itemconfig(self.obj, fill=_from_rgb((10 * len(self.carsOn), 0, 0)))
+        canvas.itemconfig(self.obj, fill=_from_rgb(tuple(max(min(255, e1 + e2), 0) for e1, e2 in zip(self.color, (0, 0, 50 * len(self.carsOn))))))
 
     def addCar(self, car, canvas):
         self.carsOn.add(car)

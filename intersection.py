@@ -26,6 +26,7 @@ class Intersection:
             if self.obj:
                 canvas.itemconfig(self.obj, fill=self.color)
                 self.color = 'blue'
+                print('DUPLICATE INTERSECTION')
             self.obj = canvas.create_oval(position[0], position[1], position[0] - self.size, position[1] - self.size,
                                           width=2,
                                           fill=self.color)

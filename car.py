@@ -1,4 +1,5 @@
 import random
+from utils import *
 
 
 class Car:
@@ -31,10 +32,14 @@ class Car:
     def changeRoad(self, currentRoad, canvas, forward=True):
         if (not forward) in currentRoad.connected.keys():
             currentIntersection = currentRoad.connected[not forward]
-            callback = lambda: self.follow(random.choice(list(currentIntersection.roads - set([currentRoad]))), canvas,
-                                           forward)
+            newRoad = random.choice(list(currentIntersection.roads - set([currentRoad])))
+            connected = newRoad.connected
+            newRoadForward = list(connected.keys())[list(connected.values()).index(currentIntersection)]
+            callback = lambda: self.follow(newRoad, canvas, newRoadForward)
             currentIntersection.wait(callback, canvas)
         else:
+            if DEBUG:
+                print('looping back')
             self.follow(currentRoad, canvas, not forward)
         # print(currentRoad.connected, forward)
 
