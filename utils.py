@@ -1,7 +1,7 @@
 from sortedcontainers import SortedSet
 import random
 
-size = [500] * 2
+size = [700] * 2
 stepSize = 50
 DEBUG = False
 
@@ -17,7 +17,7 @@ def chebyshevDistance(position1, position2):
     return max(abs(position1[0] - position2[0]), abs(position1[1] - position2[1]))
 
 
-def pathFind(start, stepDist, obstacles=[], maxSize=size, end=None, length=None):
+def pathFind(start, stepDist, obstacles=[], maxSize=size, minSize=(0, 0), end=None, length=None):
     if length and end:
         raise TypeError("can't accept both end and length")
 
@@ -27,7 +27,7 @@ def pathFind(start, stepDist, obstacles=[], maxSize=size, end=None, length=None)
         values = [tuple(c + (stepDist * p) for c, p in zip(position, permutation)) for permutation in permutations]
         newValues = []
         for value in values:
-            if 0 <= value[0] <= maxSize[0] and 0 <= value[1] <= maxSize[1]:
+            if minSize[1] <= value[0] <= maxSize[0] and minSize[1] <= value[1] <= maxSize[1]:
                 newValues.append(value)
         return newValues
 

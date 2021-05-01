@@ -9,8 +9,9 @@ from intersection import Intersection
 from utils import *
 
 top = tk.Tk()
-
-C = tk.Canvas(top, bg="white", height=size[0]+20, width=size[1]+20)
+top.minsize(width=size[0], height=size[1])
+top.maxsize(width=size[0], height=size[1])
+C = tk.Canvas(top, bg="white", height=size[0], width=size[1])
 
 
 def genRoad(genLength, currentState=None, pointsOccupied=[], end=None):
@@ -19,9 +20,9 @@ def genRoad(genLength, currentState=None, pointsOccupied=[], end=None):
     if end == currentState:
         return None
     if end:
-        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), end=end)
+        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), end=end, maxSize=tuple(e-1 for e in size), minSize=(1, 1))
     else:
-        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), length=genLength)
+        result = pathFind(currentState, stepSize, obstacles=list(set(pointsOccupied)-set([currentState, end])), length=genLength, maxSize=tuple(e-1 for e in size), minSize=(1, 1))
     if result is None:
         # print('failed')
         return None
@@ -32,7 +33,7 @@ def genRoad(genLength, currentState=None, pointsOccupied=[], end=None):
 roads = []
 numSegmentsPerRoad = 2
 numRoads = 30
-numCars = 50
+numCars = 100
 numInterConnections = 10
 allPoints = []
 newSegments = None
@@ -121,7 +122,7 @@ while numInterConnections > 0:
         # print(road1.lines[0].point1, road2.lines[0].point1)
         pass
 
-cars = [Car((100, 100), 10, C) for i in range(numCars)]
+cars = [Car((100, 100), 10, C, color=(random.randint(0, 255) for _ in range(3))) for i in range(numCars)]
 for i, car in enumerate(cars):
     if i % 2 == 0:
         car.follow(roads[random.randint(0, len(roads) - 1)], C, True)
